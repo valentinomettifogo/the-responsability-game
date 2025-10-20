@@ -1,0 +1,49 @@
+{
+  "name": "the-responsability-game",
+  "version": "1.0.0",
+  "description": "🎮 Un divertente endless runner game dove devi scappare dalle responsabilità! Sviluppato con Vue.js e HTML5 Canvas.",
+  "type": "module",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "deploy": "npm run build && gh-pages -d dist"
+  },
+  "keywords": [
+    "game",
+    "javascript",
+    "vue",
+    "vuejs",
+    "endless-runner",
+    "html5-canvas",
+    "browser-game",
+    "responsabilità",
+    "videogames"
+  ],
+  "author": {
+    "name": "Valmet",
+    "email": "your-email@example.com"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/the-responsability-game.git"
+  },
+  "homepage": "https://yourusername.github.io/the-responsability-game",
+  "bugs": {
+    "url": "https://github.com/yourusername/the-responsability-game/issues"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
+  "dependencies": {
+    "vue": "^3.5.22"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.1",
+    "gh-pages": "^6.3.0",
+    "vite": "^7.1.7"
+  }
+}
