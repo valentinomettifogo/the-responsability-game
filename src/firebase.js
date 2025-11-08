@@ -4,12 +4,12 @@ import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs } from
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyA59r5DQEEuVZMJNRE_mdnbZejgZsBiwwY",
-  authDomain: "costs-tracker-1c647.firebaseapp.com",
-  projectId: "costs-tracker-1c647",
-  storageBucket: "costs-tracker-1c647.firebasestorage.app",
-  messagingSenderId: "633159286937",
-  appId: "1:633159286937:web:b661225b9019ec9c573808"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 // Initialize Firebase
