@@ -44,12 +44,29 @@
         <span class="button-icon">🚀</span>
         Inizia a Scappare!
       </button>
+      
+      <button @click="showLeaderboard = true" class="leaderboard-link">
+        🏆 Vedi Classifica
+      </button>
     </div>
+    
+    <!-- Modal Leaderboard -->
+    <LeaderboardModal 
+      :show="showLeaderboard"
+      :current-score="0"
+      :player-name="''"
+      @close="showLeaderboard = false"
+    />
   </div>
 </template>
 
 <script setup>
+import { ref } from 'vue'
+import LeaderboardModal from './LeaderboardModal.vue'
+
 defineEmits(['start-game'])
+
+const showLeaderboard = ref(false)
 </script>
 
 <style scoped>
@@ -249,6 +266,33 @@ defineEmits(['start-game'])
   box-shadow: 0 12px 24px rgba(66, 133, 244, 0.4);
 }
 
+.leaderboard-link {
+  width: 100%;
+  padding: 14px 40px;
+  font-size: 16px;
+  font-weight: 500;
+  background: transparent;
+  color: #4285F4;
+  border: 2px solid #4285F4;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.leaderboard-link:hover {
+  background: #4285F4;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(66, 133, 244, 0.3);
+}
+
 @media (max-width: 768px) {
   .start-card {
     padding: 20px 16px;
@@ -311,6 +355,12 @@ defineEmits(['start-game'])
   .start-button {
     font-size: 18px;
     padding: 14px;
+  }
+  
+  .leaderboard-link {
+    padding: 12px;
+    font-size: 14px;
+    margin-top: 10px;
   }
 }
 </style>
