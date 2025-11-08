@@ -8,7 +8,7 @@ export const FALLING_OBJECTS_CONFIG = {
   
   // === OSTACOLI (RESPONSABILITÀ) ===
   obstacles: {
-    studyBooks: {
+    /* studyBooks: {
       id: 'study-books',
       name: 'Libri di Studio',
       type: 'obstacle',
@@ -29,16 +29,16 @@ export const FALLING_OBJECTS_CONFIG = {
       physics: {
         hitboxScale: 0.8
       }
-    },
+    }, */
 
     work: {
       id: 'work',
       name: 'Lavoro',
       type: 'obstacle',
       visual: {
-        type: 'emoji',
-        content: '💼',
-        size: 42,
+        type: 'image',
+        content: '/images/work.png',
+        size: 70,
         badEffect: true
       },
       movement: {
@@ -56,9 +56,9 @@ export const FALLING_OBJECTS_CONFIG = {
       name: 'Pulizie',
       type: 'obstacle',
       visual: {
-        type: 'emoji',
-        content: '🧹',
-        size: 38,
+        type: 'image',
+        content: '/images/clean.png',
+        size: 68,
         badEffect: true
       },
       movement: {
@@ -71,7 +71,7 @@ export const FALLING_OBJECTS_CONFIG = {
       }
     },
 
-    documents: {
+    /* documents: {
       id: 'documents',
       name: 'Documenti',
       type: 'obstacle',
@@ -89,16 +89,16 @@ export const FALLING_OBJECTS_CONFIG = {
       gameplay: {
         damage: 1
       }
-    },
+    }, */
 
     family: {
       id: 'family',
       name: 'Impegni Familiari',
       type: 'obstacle',
       visual: {
-        type: 'emoji',
-        content: '👨‍👩‍👧',
-        size: 44,
+        type: 'image',
+        content: '/images/baby.png',
+        size: 72,
         badEffect: true
       },
       movement: {
@@ -136,7 +136,7 @@ export const FALLING_OBJECTS_CONFIG = {
     */
 
     // Esempio con SVG placeholder
-    urgentTask: {
+    /* urgentTask: {
       id: 'urgent-task',
       name: 'Compito Urgente',
       type: 'obstacle',
@@ -155,7 +155,7 @@ export const FALLING_OBJECTS_CONFIG = {
       gameplay: {
         damage: 1
       }
-    }
+    } */
   },
 
   // === COLLECTIBLES (RICOMPENSE) ===
@@ -165,9 +165,9 @@ export const FALLING_OBJECTS_CONFIG = {
       name: 'Controller',
       type: 'collectible',
       visual: {
-        type: 'emoji',
-        content: '🎮',
-        size: 35,
+        type: 'image',
+        content: '/images/joystick.png',
+        size: 65,
         goodEffect: true // Indicatore per effetti positivi
       },
       movement: {
@@ -185,9 +185,9 @@ export const FALLING_OBJECTS_CONFIG = {
       name: 'Caffè',
       type: 'collectible',
       visual: {
-        type: 'emoji',
-        content: '☕',
-        size: 32,
+        type: 'image',
+        content: '/images/coffee.png',
+        size: 62,
         goodEffect: true
       },
       movement: {
@@ -206,9 +206,9 @@ export const FALLING_OBJECTS_CONFIG = {
       name: 'Pizza',
       type: 'collectible',
       visual: {
-        type: 'emoji',
-        content: '🍕',
-        size: 36,
+        type: 'image',
+        content: '/images/pizza.png',
+        size: 66,
         goodEffect: true
       },
       movement: {
@@ -222,7 +222,7 @@ export const FALLING_OBJECTS_CONFIG = {
     },
 
     // Esempio di collectible raro con SVG
-    goldStar: {
+    /* goldStar: {
       id: 'gold-star',
       name: 'Stella Dorata',
       type: 'collectible',
@@ -242,7 +242,7 @@ export const FALLING_OBJECTS_CONFIG = {
         points: 50,
         special: 'bonus-multiplier'
       }
-    }
+    } */
   }
 }
 

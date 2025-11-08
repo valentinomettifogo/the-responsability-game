@@ -58,20 +58,25 @@ function startGame() {
 
 function restartGame() {
   score.value = 0
-  if (gameCanvas.value) {
-    gameCanvas.value.initGame()
-    gameState.value = 'playing'
-  }
+  gameState.value = 'playing'
+  nextTick(() => {
+    if (gameCanvas.value) {
+      gameCanvas.value.initGame()
+    }
+  })
 }
 
 function handleGameOver(finalScore) {
-  gameState.value = 'gameOver'
   score.value = finalScore
   
   if (finalScore > highScore.value) {
     highScore.value = finalScore
     localStorage.setItem('responsibilityGameHighScore', finalScore.toString())
   }
+  
+  nextTick(() => {
+    gameState.value = 'gameOver'
+  })
 }
 
 function updateScore(newScore) {

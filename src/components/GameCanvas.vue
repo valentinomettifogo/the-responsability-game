@@ -2,13 +2,16 @@
   <canvas 
     ref="canvas"
     class="game-canvas"
+    @touchstart="handleTouchStart"
+    @touchmove="handleTouchMove"
+    @touchend="handleTouchEnd"
     @click="handleClick"
   ></canvas>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted, watch } from 'vue'
-import { FallingObjectFactory } from '../game/falling-objects/FallingObjectsConfig.js'
+import { FallingObjectFactory } from '../game/FallingObjectsConfig.js'
 
 const props = defineProps({
   gameState: {
@@ -25,16 +28,24 @@ let animationId = null
 
 // Configurazioni del gioco
 const LANES = 3
-const GAME_WIDTH = 600 // Larghezza fissa del gioco
+let GAME_WIDTH = 600 // Larghezza che si adatta allo schermo
 let LANE_WIDTH = GAME_WIDTH / LANES
 let CANVAS_WIDTH = GAME_WIDTH
 let CANVAS_HEIGHT = 800
+
+// Touch controls per mobile
+const touchData = ref({
+  startX: 0,
+  startY: 0,
+  moveX: 0,
+  isDragging: false
+})
 
 // Stato del gioco
 const gameData = ref({
   isPlaying: false,
   score: 0,
-  gameSpeed: 3, // Rallentato da 5 a 3 per maggiore fluidità
+  gameSpeed: 4.5, // Aumentato da 3 a 4.5 per mobile
   frameCount: 0
 })
 
@@ -50,10 +61,12 @@ const player = ref({
   targetLane: 1,
   x: GAME_WIDTH / 2, // Centro della board
   y: 650, // Sarà aggiornato da resizeCanvas
-  width: 50,
-  height: 70,
+  width: 100,
+  height: 130,
   color: '#ff6b6b',
-  speed: 10
+  speed: 10,
+  image: null,
+  imageLoaded: false
 })
 
 // Arrays per ostacoli e oggetti da raccogliere
@@ -73,12 +86,39 @@ const deathAnimation = ref({
   startTime: null
 })
 
+// Elementi decorativi per lo sfondo
+const backgroundElements = ref([])
+
+function initBackgroundElements() {
+  backgroundElements.value = []
+  
+  // Crea elementi decorativi fissi nello sfondo
+  const elementTypes = ['🏠', '🌳', '☁️', '🏢', '🌿', '🏫']
+  
+  for (let i = 0; i < 12; i++) {
+    backgroundElements.value.push({
+      type: elementTypes[Math.floor(Math.random() * elementTypes.length)],
+      x: Math.random() * CANVAS_WIDTH,
+      y: Math.random() * CANVAS_HEIGHT,
+      size: 20 + Math.random() * 30,
+      opacity: 0.15 + Math.random() * 0.15,
+      speed: 0.3 + Math.random() * 0.5
+    })
+  }
+}
+
 onMounted(() => {
   // Imposta le dimensioni del canvas
   resizeCanvas()
   
   ctx = canvas.value.getContext('2d')
   setupKeyboardListeners()
+  
+  // Carica l'immagine del player
+  loadPlayerImage()
+  
+  // Inizializza elementi decorativi
+  initBackgroundElements()
   
   // Aggiungi listener per il ridimensionamento
   window.addEventListener('resize', resizeCanvas)
@@ -121,10 +161,25 @@ function removeKeyboardListeners() {
   document.removeEventListener('keydown', handleKeydown)
 }
 
+function loadPlayerImage() {
+  player.value.image = new Image()
+  player.value.image.onload = () => {
+    player.value.imageLoaded = true
+    draw() // Ridisegna quando l'immagine è caricata
+  }
+  player.value.image.onerror = () => {
+    console.warn('Errore nel caricamento dell\'immagine del player')
+    player.value.imageLoaded = false
+  }
+  player.value.image.src = '/images/player.webp'
+}
+
 function resizeCanvas() {
   if (!canvas.value) return
   
-  // Mantieni larghezza fissa, solo altezza responsive
+  // Adatta la larghezza allo schermo su mobile, max 600px su desktop
+  const isMobile = window.innerWidth < 768
+  GAME_WIDTH = isMobile ? Math.min(window.innerWidth, 600) : 600
   CANVAS_WIDTH = GAME_WIDTH
   CANVAS_HEIGHT = window.innerHeight
   LANE_WIDTH = CANVAS_WIDTH / LANES
@@ -135,6 +190,11 @@ function resizeCanvas() {
   // Aggiorna la posizione del player
   player.value.x = LANE_WIDTH * player.value.targetLane + LANE_WIDTH / 2
   player.value.y = CANVAS_HEIGHT - 150
+  
+  // Re-inizializza elementi decorativi quando si ridimensiona
+  if (backgroundElements.value.length > 0) {
+    initBackgroundElements()
+  }
 }
 
 function handleKeydown(e) {
@@ -148,14 +208,65 @@ function handleKeydown(e) {
 }
 
 function handleClick() {
-  // Controlli touch per mobile - cambia corsia al tocco
+  // Controlli touch per mobile - determina la corsia in base alla posizione del click
   if (!gameData.value.isPlaying) return
   
-  if (player.value.targetLane < LANES - 1) {
-    player.value.targetLane++
-  } else {
-    player.value.targetLane = 0
+  const rect = canvas.value.getBoundingClientRect()
+  const clickX = event.clientX - rect.left
+  const clickedLane = Math.floor(clickX / LANE_WIDTH)
+  
+  if (clickedLane >= 0 && clickedLane < LANES) {
+    player.value.targetLane = clickedLane
   }
+}
+
+function handleTouchStart(e) {
+  if (!gameData.value.isPlaying) return
+  e.preventDefault()
+  
+  const touch = e.touches[0]
+  touchData.value.startX = touch.clientX
+  touchData.value.startY = touch.clientY
+  touchData.value.isDragging = true
+}
+
+function handleTouchMove(e) {
+  if (!gameData.value.isPlaying || !touchData.value.isDragging) return
+  e.preventDefault()
+  
+  const touch = e.touches[0]
+  touchData.value.moveX = touch.clientX
+}
+
+function handleTouchEnd(e) {
+  if (!gameData.value.isPlaying || !touchData.value.isDragging) return
+  e.preventDefault()
+  
+  const deltaX = touchData.value.moveX - touchData.value.startX
+  const swipeThreshold = 30 // pixel minimi per considerarlo uno swipe
+  
+  // Swipe verso destra
+  if (deltaX > swipeThreshold && player.value.targetLane < LANES - 1) {
+    player.value.targetLane++
+  } 
+  // Swipe verso sinistra
+  else if (deltaX < -swipeThreshold && player.value.targetLane > 0) {
+    player.value.targetLane--
+  }
+  // Se non è uno swipe, considera come tap e vai alla corsia più vicina
+  else if (Math.abs(deltaX) < swipeThreshold) {
+    const rect = canvas.value.getBoundingClientRect()
+    const tapX = touchData.value.startX - rect.left
+    const tappedLane = Math.floor(tapX / LANE_WIDTH)
+    
+    if (tappedLane >= 0 && tappedLane < LANES) {
+      player.value.targetLane = tappedLane
+    }
+  }
+  
+  touchData.value.isDragging = false
+  touchData.value.startX = 0
+  touchData.value.moveX = 0
 }
 
 function spawnObstacle() {
@@ -189,7 +300,8 @@ function updateObstacles() {
     obs.update(gameData.value.gameSpeed)
   })
 
-  if (gameData.value.frameCount % 80 === 0) { // Spawn meno frequente (da 60 a 80)
+  // Spawn più distanziato: da 80 a 110 frames (quasi 2 secondi a 60fps)
+  if (gameData.value.frameCount % 110 === 0) {
     spawnObstacle()
   }
 }
@@ -219,7 +331,8 @@ function updateCollectibles() {
     }
   }
 
-  if (gameData.value.frameCount % 150 === 0) { // Spawn meno frequente (da 120 a 150)
+  // Spawn più distanziato: da 150 a 180 frames (3 secondi a 60fps)
+  if (gameData.value.frameCount % 180 === 0) {
     spawnCollectible()
   }
 }
@@ -433,17 +546,26 @@ function draw() {
   
   ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
 
-  // Sfondo cielo
+  // Sfondo con colori Google
   const gradient = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT)
-  gradient.addColorStop(0, '#87ceeb')
-  gradient.addColorStop(1, '#98d8e8')
+  gradient.addColorStop(0, '#E3F2FD') // Azzurro chiaro
+  gradient.addColorStop(0.4, '#4285F4') // Google Blue
+  gradient.addColorStop(0.7, '#34A853') // Google Green
+  gradient.addColorStop(1, '#FBBC04') // Google Yellow
   ctx.fillStyle = gradient
   ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
+  
+  // Disegna elementi decorativi nello sfondo
+  drawBackgroundElements()
 
-  // Disegna le corsie
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'
-  ctx.lineWidth = 3
-  ctx.setLineDash([20, 15])
+  // Overlay semi-trasparente per dare profondità e rappresentare il peso delle responsabilità
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.08)'
+  ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
+
+  // Disegna le corsie con linee più visibili
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)'
+  ctx.lineWidth = 2
+  ctx.setLineDash([15, 10])
   for (let i = 1; i < LANES; i++) {
     ctx.beginPath()
     ctx.moveTo(i * LANE_WIDTH, 0)
@@ -452,35 +574,48 @@ function draw() {
   }
   ctx.setLineDash([])
 
-  // Strada
-  ctx.fillStyle = 'rgba(100, 100, 100, 0.2)'
-  ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
-
-  // Indicatore corsia obiettivo
+  // Indicatore corsia obiettivo con effetto glow
   if (gameData.value.isPlaying) {
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.2)'
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.15)'
     ctx.fillRect(LANE_WIDTH * player.value.targetLane, 0, LANE_WIDTH, CANVAS_HEIGHT)
+    
+    // Bordi della corsia attiva
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'
+    ctx.lineWidth = 3
+    ctx.strokeRect(LANE_WIDTH * player.value.targetLane, 0, LANE_WIDTH, CANVAS_HEIGHT)
   }
 
   // Player
-  ctx.fillStyle = player.value.color
-  ctx.fillRect(
-    player.value.x - player.value.width/2, 
-    player.value.y - player.value.height/2, 
-    player.value.width, 
-    player.value.height
-  )
-  
-  // Testa del player
-  ctx.fillStyle = '#ffcc99'
-  ctx.beginPath()
-  ctx.arc(player.value.x, player.value.y - player.value.height/2 + 15, 15, 0, Math.PI * 2)
-  ctx.fill()
+  if (player.value.imageLoaded && player.value.image) {
+    // Disegna l'immagine del player
+    ctx.drawImage(
+      player.value.image,
+      player.value.x - player.value.width/2,
+      player.value.y - player.value.height/2,
+      player.value.width,
+      player.value.height
+    )
+  } else {
+    // Fallback al disegno originale se l'immagine non è caricata
+    ctx.fillStyle = player.value.color
+    ctx.fillRect(
+      player.value.x - player.value.width/2, 
+      player.value.y - player.value.height/2, 
+      player.value.width, 
+      player.value.height
+    )
+    
+    // Testa del player
+    ctx.fillStyle = '#ffcc99'
+    ctx.beginPath()
+    ctx.arc(player.value.x, player.value.y - player.value.height/2 + 15, 15, 0, Math.PI * 2)
+    ctx.fill()
 
-  // Occhi
-  ctx.fillStyle = 'black'
-  ctx.fillRect(player.value.x - 8, player.value.y - player.value.height/2 + 12, 4, 4)
-  ctx.fillRect(player.value.x + 4, player.value.y - player.value.height/2 + 12, 4, 4)
+    // Occhi
+    ctx.fillStyle = 'black'
+    ctx.fillRect(player.value.x - 8, player.value.y - player.value.height/2 + 12, 4, 4)
+    ctx.fillRect(player.value.x + 4, player.value.y - player.value.height/2 + 12, 4, 4)
+  }
 
   // Ostacoli
   obstacles.value.forEach(obs => {
@@ -525,6 +660,36 @@ function drawVisualEffects(ctx) {
   }
 }
 
+/**
+ * Disegna elementi decorativi nello sfondo
+ */
+function drawBackgroundElements() {
+  backgroundElements.value.forEach(elem => {
+    ctx.save()
+    ctx.globalAlpha = elem.opacity
+    ctx.font = `${elem.size}px Arial`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(elem.type, elem.x, elem.y)
+    ctx.restore()
+  })
+}
+
+/**
+ * Aggiorna gli elementi decorativi (scrolling lento)
+ */
+function updateBackgroundElements() {
+  backgroundElements.value.forEach(elem => {
+    elem.y += elem.speed
+    
+    // Riposiziona in alto quando esce dallo schermo
+    if (elem.y > CANVAS_HEIGHT + 50) {
+      elem.y = -50
+      elem.x = Math.random() * CANVAS_WIDTH
+    }
+  })
+}
+
 function gameLoop() {
   // Aggiorna sempre l'animazione di morte, anche se il gioco non sta girando
   if (deathAnimation.value.active) {
@@ -543,6 +708,7 @@ function gameLoop() {
   updateObstacles()
   updateCollectibles() // Questa già gestisce le collisioni
   updateFloatingScores() // Aggiorna i punteggi volanti
+  updateBackgroundElements() // Aggiorna elementi decorativi
   
   // Controlla game over SOLO se non c'è animazione di morte attiva
   if (!deathAnimation.value.active) {
@@ -552,12 +718,10 @@ function gameLoop() {
   // Se il gioco è finito durante checkGameOver, non continuare
   if (!gameData.value.isPlaying && !deathAnimation.value.active) return
 
-  gameData.value.score++
-  if (gameData.value.frameCount % 300 === 0) {
-    gameData.value.gameSpeed += 0.5
+  // Aumenta velocità più frequentemente: ogni 250 frames (circa 4 secondi a 60fps)
+  if (gameData.value.frameCount % 250 === 0) {
+    gameData.value.gameSpeed += 0.4 // Incremento leggermente maggiore
   }
-
-  emit('score-update', gameData.value.score)
 
   draw()
   animationId = requestAnimationFrame(gameLoop)
@@ -570,7 +734,7 @@ function initGame() {
   }
   
   gameData.value.score = 0
-  gameData.value.gameSpeed = 3 // Rallentato da 5 a 3
+  gameData.value.gameSpeed = 4.5 // Aumentato da 3 a 4.5
   gameData.value.frameCount = 0
   obstacles.value = []
   collectibles.value = []
@@ -613,10 +777,22 @@ defineExpose({
 <style scoped>
 .game-canvas {
   display: block;
-  width: 600px;
+  width: 100%;
+  max-width: 600px;
   height: 100vh;
   margin: 0 auto;
-  background: linear-gradient(to bottom, #87ceeb 0%, #98d8e8 100%);
+  background: linear-gradient(to bottom, #E3F2FD 0%, #4285F4 40%, #34A853 70%, #FBBC04 100%);
   cursor: pointer;
+  touch-action: none; /* Previene lo scroll durante il gioco */
+  user-select: none; /* Previene la selezione del testo */
+  -webkit-user-select: none;
+  -webkit-touch-callout: none; /* Previene il menu contestuale su iOS */
+}
+
+@media (max-width: 768px) {
+  .game-canvas {
+    width: 100vw;
+    max-width: 100vw;
+  }
 }
 </style>
